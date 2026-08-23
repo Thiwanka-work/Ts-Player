@@ -5,36 +5,54 @@ on:
     branches: [ "develop", "main", "master" ]
   pull_request:
     branches: [ "develop", "main", "master" ]
-  workflow_dispatch:   # allows manual trigger from GitHub UI
+  workflow_dispatch:
 
 jobs:
   build:
     name: Build MPC-HC (Release | Win32)
-    runs-on: windows-2022   # VS 2022 with MSVC v143 + MFC pre-installed
+    runs-on: windows-2022
 
     steps:
-      # ── 1. Checkout code (no submodules yet) ────────────────────────────
+      # ── 1. Checkout WITHOUT submodules ──────────────────────────────────
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          submodules: false   # we handle submodules manually below
+          submodules: false
 
-      # ── 2. Rewrite git:// → https:// (needed for old submodule URLs) ────
-      - name: Rewrite git:// URLs to https://
-        run: git config --global url."https://".insteadOf git://
+      # ── 2. Rewrite git:// → https:// ────────────────────────────────────
+      - name: Rewrite git:// to https://
+        run: git config --global url."https://".insteadOf "git://"
         shell: pwsh
 
-      # ── 3. Init only top-level submodules (shallow, skip broken ones) ───
-      - name: Init submodules (shallow)
-        run: git submodule update --init --depth=1
+      # ── 3. Init ONLY top-level submodules, skip broken nested ones ───────
+      - name: Init top-level submodules only
+        run: |
+          git submodule init
+          # Get list of top-level submodule paths
+          $submodules = git config --file .gitmodules --get-regexp path | ForEach-Object { $_.Split(' ')[1] }
+          foreach ($sub in $submodules) {
+            Write-Host "Trying submodule: $sub"
+            git submodule update --init --depth=1 -- $sub 2>&1
+          }
         shell: pwsh
-        continue-on-error: true   # some sub-submodules may still fail; continue anyway
+        continue-on-error: true
 
       # ── 4. Setup MSBuild ────────────────────────────────────────────────
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
 
-      # ── 5. Build the project ────────────────────────────────────────────
+      # ── 5. Check what include dirs exist (debug step) ───────────────────
+      - name: List include and lib dirs
+        run: |
+          Write-Host "=== include ==="
+          if (Test-Path include) { ls include } else { Write-Host "No include dir" }
+          Write-Host "=== lib ==="
+          if (Test-Path lib) { ls lib } else { Write-Host "No lib dir" }
+          Write-Host "=== src/thirdparty ==="
+          if (Test-Path src/thirdparty) { ls src/thirdparty } else { Write-Host "No thirdparty dir" }
+        shell: pwsh
+
+      # ── 6. Build mpc-hc ─────────────────────────────────────────────────
       - name: Build mpc-hc (Release | Win32)
         run: |
           msbuild src\mpc-hc\mpc-hc.vcxproj `
@@ -47,8 +65,8 @@ jobs:
             /v:minimal
         shell: pwsh
 
-      # ── 6. Upload .exe as GitHub artifact (downloadable) ────────────────
-      - name: Upload mpc-hc.exe artifact
+      # ── 7. Upload artifact ───────────────────────────────────────────────
+      - name: Upload mpc-hc.exe
         uses: actions/upload-artifact@v4
         with:
           name: mpc-hc-darkmode-Win32-Release
@@ -56,4 +74,4 @@ jobs:
             **/mpc-hc.exe
             **/mpc-hc.pdb
           if-no-files-found: warn
-          retention-days: 30    # artifact available for 30 days
+          retention-days: 30
