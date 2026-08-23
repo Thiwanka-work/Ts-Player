@@ -732,7 +732,7 @@ bool CMPlayerCApp::StoreSettingsToRegistry()
     free((void*)m_pszRegistryKey);
     m_pszRegistryKey = nullptr;
 
-    SetRegistryKey(_T("MPC-HC"));
+    SetRegistryKey(_T("NEBULA"));
 
     return true;
 }
@@ -770,7 +770,7 @@ bool CMPlayerCApp::GetAppDataPath(CString& path)
         return false;
     }
     CPath p;
-    p.Combine(path, _T("MPC-HC"));
+    p.Combine(path, _T("NEBULA"));
     path = (LPCTSTR)p;
 
     return true;

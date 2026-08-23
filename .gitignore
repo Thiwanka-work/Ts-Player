@@ -36,3 +36,5 @@
 /src/thirdparty/DoctorDump/obj
 /src/thirdparty/LAVFilters/obj
 ipch
+config.bat
+node_modules
