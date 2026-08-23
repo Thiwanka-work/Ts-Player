@@ -63,8 +63,8 @@ CAppSettings::CAppSettings()
     , MRUDub(0, _T("Recent Dub List"), _T("Dub%d"), iRecentFilesNumber)
     , filePositions(AfxGetApp(), IDS_R_SETTINGS, iRecentFilesNumber)
     , dvdPositions(AfxGetApp(), IDS_R_SETTINGS, iRecentFilesNumber)
-    , fRememberDVDPos(false)
-    , fRememberFilePos(false)
+    , fRememberDVDPos(true)
+    , fRememberFilePos(true)
     , iRememberPosForLongerThan(0)
     , bRememberPosForAudioFiles(true)
     , bRememberPlaylistItems(true)
@@ -1770,13 +1770,13 @@ void CAppSettings::LoadSettings()
     }
 
     // playback positions for last played files
-    fRememberFilePos = !!pApp->GetProfileInt(IDS_R_SETTINGS, IDS_RS_FILEPOS, FALSE);
+    fRememberFilePos = !!pApp->GetProfileInt(IDS_R_SETTINGS, IDS_RS_FILEPOS, TRUE);
     iRememberPosForLongerThan = pApp->GetProfileInt(IDS_R_SETTINGS, IDS_RS_FILEPOSLONGER, 0);
     bRememberPosForAudioFiles = !!pApp->GetProfileInt(IDS_R_SETTINGS, IDS_RS_FILEPOSAUDIO, TRUE);
     filePositions.Load();
 
     // playback positions for last played DVDs
-    fRememberDVDPos = !!pApp->GetProfileInt(IDS_R_SETTINGS, IDS_RS_DVDPOS, FALSE);
+    fRememberDVDPos = !!pApp->GetProfileInt(IDS_R_SETTINGS, IDS_RS_DVDPOS, TRUE);
     dvdPositions.Load();
 
     fLastFullScreen = !!pApp->GetProfileInt(IDS_R_SETTINGS, IDS_RS_LASTFULLSCREEN, FALSE);
