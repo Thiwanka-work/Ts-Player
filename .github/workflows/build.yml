@@ -55,7 +55,7 @@ jobs:
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
 
-      # ── 7. Build the project ────────────────────────────────────────────
+      # ── 7. Build the project with SolutionDir defined ───────────────────
       - name: Build mpc-hc (Release | Win32)
         run: |
           msbuild src\mpc-hc\mpc-hc.vcxproj `
@@ -63,6 +63,7 @@ jobs:
             /p:Platform=Win32 `
             /p:PlatformToolset=v143 `
             /p:MPCHC_WINSDK_VER=10.0 `
+            /p:SolutionDir="${{ github.workspace }}\" `
             /m `
             /nologo `
             /clp:Summary `

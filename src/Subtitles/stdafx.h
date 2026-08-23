@@ -40,3 +40,5 @@
 #include <list>
 #include <memory>
 #include <thread>
+#include <cmath>
+#include <functional>
