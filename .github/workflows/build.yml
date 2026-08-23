@@ -19,11 +19,11 @@ jobs:
           git config --global url."https://".insteadOf "git://"
         shell: pwsh
 
-      # ── 2. Checkout repository recursively ──────────────────────────────
+      # ── 2. Checkout repository (top-level submodules only, no recursion) ──
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          submodules: recursive
+          submodules: true   # checkout top-level submodules only (prevents broken nested LAVFilters sub-submodules from failing)
 
       # ── 3. Create build.user.bat to satisfy environment variables ───────
       - name: Create build.user.bat
