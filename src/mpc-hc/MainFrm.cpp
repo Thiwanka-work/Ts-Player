@@ -1110,7 +1110,7 @@ void CMainFrame::ShowTrayIcon(bool bShow)
             nid.uCallbackMessage = WM_NOTIFYICON;
             nid.hIcon = (HICON)LoadImage(AfxGetInstanceHandle(), MAKEINTRESOURCE(IDR_MAINFRAME),
                                          IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR);
-            StringCchCopy(nid.szTip, _countof(nid.szTip), _T("MPC-HC"));
+            StringCchCopy(nid.szTip, _countof(nid.szTip), _T("Nebula Player"));
             Shell_NotifyIcon(NIM_ADD, &nid);
             m_bTrayIcon = true;
         }
