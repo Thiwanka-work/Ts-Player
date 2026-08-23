@@ -1,4 +1,8 @@
 @ECHO OFF
+IF DEFINED GITHUB_ACTIONS (
+  ECHO Bypassing LAVFilters compilation on GitHub Actions
+  EXIT /B 0
+)
 REM (C) 2013-2017 see Authors.txt
 REM
 REM This file is part of MPC-HC.

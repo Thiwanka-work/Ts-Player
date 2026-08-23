@@ -13,69 +13,51 @@ jobs:
     runs-on: windows-2022
 
     steps:
-      # ── 1. Checkout WITHOUT submodules ──────────────────────────────────
+      # ── 1. Configure Git globally to rewrite git:// to https:// ────────
+      - name: Configure Git rewrite
+        run: |
+          git config --global url."https://".insteadOf "git://"
+        shell: pwsh
+
+      # ── 2. Checkout repository recursively ──────────────────────────────
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          submodules: false
+          submodules: recursive
 
-      # ── 2. Rewrite ALL git:// URLs to https:// ───────────────────────────
-      - name: Rewrite git:// to https://
-        run: git config --global url."https://".insteadOf "git://"
-        shell: pwsh
-
-      # ── 3. Manually init each top-level submodule, skip if broken ────────
-      - name: Init submodules one by one (skip broken)
+      # ── 3. Create build.user.bat to satisfy environment variables ───────
+      - name: Create build.user.bat
         run: |
-          $submodulePaths = @(
-            "src/thirdparty/bs2b/libbs2b",
-            "src/thirdparty/LAVFilters/src",
-            "src/thirdparty/lcms2/library",
-            "src/thirdparty/MediaInfo/library",
-            "src/thirdparty/nanosvg",
-            "src/thirdparty/rapidjson",
-            "src/thirdparty/RARFileSource/library",
-            "src/thirdparty/sanear/sanear",
-            "src/thirdparty/SoundTouch/soundtouch",
-            "src/thirdparty/soxr/libsoxr",
-            "src/thirdparty/tinyxml2/library",
-            "src/thirdparty/XmlRpc4Win",
-            "src/thirdparty/ZenLib/library",
-            "src/thirdparty/minhook/minhook"
-          )
-
-          foreach ($path in $submodulePaths) {
-            Write-Host "--- Initializing: $path ---"
-            # init + update, depth=1, no recurse (skip nested sub-submodules)
-            git submodule update --init --depth=1 --no-recommend-shallow -- $path 2>&1
-            if ($LASTEXITCODE -ne 0) {
-              Write-Host "WARNING: $path failed, skipping..."
-            } else {
-              Write-Host "OK: $path"
-            }
-          }
+          @'
+          @ECHO OFF
+          SET "MPCHC_MSYS=C:\Program Files\Git"
+          SET "MPCHC_MINGW32=C:\Program Files\Git"
+          SET "MPCHC_MINGW64=C:\Program Files\Git"
+          SET "MPCHC_GIT=C:\Program Files\Git"
+          SET "MPCHC_WINSDK_VER=10.0"
+          '@ | Out-File -FilePath build.user.bat -Encoding ascii
         shell: pwsh
-        continue-on-error: true
 
       # ── 4. Setup MSBuild ────────────────────────────────────────────────
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
 
-      # ── 5. Build mpc-hc ─────────────────────────────────────────────────
+      # ── 5. Build the project ────────────────────────────────────────────
       - name: Build mpc-hc (Release | Win32)
         run: |
           msbuild src\mpc-hc\mpc-hc.vcxproj `
             /p:Configuration=Release `
             /p:Platform=Win32 `
             /p:PlatformToolset=v143 `
+            /p:MPCHC_WINSDK_VER=10.0 `
             /m `
             /nologo `
             /clp:Summary `
             /v:minimal
         shell: pwsh
 
-      # ── 6. Upload artifact ───────────────────────────────────────────────
-      - name: Upload mpc-hc.exe
+      # ── 6. Upload .exe as GitHub artifact ───────────────────────────────
+      - name: Upload mpc-hc.exe artifact
         uses: actions/upload-artifact@v4
         with:
           name: mpc-hc-darkmode-Win32-Release
