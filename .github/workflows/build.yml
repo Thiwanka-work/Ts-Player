@@ -19,20 +19,40 @@ jobs:
         with:
           submodules: false
 
-      # ── 2. Rewrite git:// → https:// ────────────────────────────────────
+      # ── 2. Rewrite ALL git:// URLs to https:// ───────────────────────────
       - name: Rewrite git:// to https://
         run: git config --global url."https://".insteadOf "git://"
         shell: pwsh
 
-      # ── 3. Init ONLY top-level submodules, skip broken nested ones ───────
-      - name: Init top-level submodules only
+      # ── 3. Manually init each top-level submodule, skip if broken ────────
+      - name: Init submodules one by one (skip broken)
         run: |
-          git submodule init
-          # Get list of top-level submodule paths
-          $submodules = git config --file .gitmodules --get-regexp path | ForEach-Object { $_.Split(' ')[1] }
-          foreach ($sub in $submodules) {
-            Write-Host "Trying submodule: $sub"
-            git submodule update --init --depth=1 -- $sub 2>&1
+          $submodulePaths = @(
+            "src/thirdparty/bs2b/libbs2b",
+            "src/thirdparty/LAVFilters/src",
+            "src/thirdparty/lcms2/library",
+            "src/thirdparty/MediaInfo/library",
+            "src/thirdparty/nanosvg",
+            "src/thirdparty/rapidjson",
+            "src/thirdparty/RARFileSource/library",
+            "src/thirdparty/sanear/sanear",
+            "src/thirdparty/SoundTouch/soundtouch",
+            "src/thirdparty/soxr/libsoxr",
+            "src/thirdparty/tinyxml2/library",
+            "src/thirdparty/XmlRpc4Win",
+            "src/thirdparty/ZenLib/library",
+            "src/thirdparty/minhook/minhook"
+          )
+
+          foreach ($path in $submodulePaths) {
+            Write-Host "--- Initializing: $path ---"
+            # init + update, depth=1, no recurse (skip nested sub-submodules)
+            git submodule update --init --depth=1 --no-recommend-shallow -- $path 2>&1
+            if ($LASTEXITCODE -ne 0) {
+              Write-Host "WARNING: $path failed, skipping..."
+            } else {
+              Write-Host "OK: $path"
+            }
           }
         shell: pwsh
         continue-on-error: true
@@ -41,18 +61,7 @@ jobs:
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
 
-      # ── 5. Check what include dirs exist (debug step) ───────────────────
-      - name: List include and lib dirs
-        run: |
-          Write-Host "=== include ==="
-          if (Test-Path include) { ls include } else { Write-Host "No include dir" }
-          Write-Host "=== lib ==="
-          if (Test-Path lib) { ls lib } else { Write-Host "No lib dir" }
-          Write-Host "=== src/thirdparty ==="
-          if (Test-Path src/thirdparty) { ls src/thirdparty } else { Write-Host "No thirdparty dir" }
-        shell: pwsh
-
-      # ── 6. Build mpc-hc ─────────────────────────────────────────────────
+      # ── 5. Build mpc-hc ─────────────────────────────────────────────────
       - name: Build mpc-hc (Release | Win32)
         run: |
           msbuild src\mpc-hc\mpc-hc.vcxproj `
@@ -65,7 +74,7 @@ jobs:
             /v:minimal
         shell: pwsh
 
-      # ── 7. Upload artifact ───────────────────────────────────────────────
+      # ── 6. Upload artifact ───────────────────────────────────────────────
       - name: Upload mpc-hc.exe
         uses: actions/upload-artifact@v4
         with:
