@@ -86,6 +86,7 @@
 #define ID_FILE_SUBTITLES_SAVE          810
 #define ID_FILE_SUBTITLES_UPLOAD        811
 #define ID_FILE_SUBTITLES_DOWNLOAD      812
+#define ID_FILE_SUBTITLES_SEARCH_SINHALA 813
 #define ID_FILE_PROPERTIES              814
 #define ID_VIEW_OPTIONS                 815
 #define ID_FILE_EXIT                    816

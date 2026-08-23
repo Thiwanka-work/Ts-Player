@@ -261,6 +261,8 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
     ON_UPDATE_COMMAND_UI(ID_FILE_SUBTITLES_UPLOAD, OnUpdateFileSubtitlesUpload)
     ON_COMMAND(ID_FILE_SUBTITLES_DOWNLOAD, OnFileSubtitlesDownload)
     ON_UPDATE_COMMAND_UI(ID_FILE_SUBTITLES_DOWNLOAD, OnUpdateFileSubtitlesDownload)
+    ON_COMMAND(ID_FILE_SUBTITLES_SEARCH_SINHALA, OnFileSubtitlesSearchSinhala)
+    ON_UPDATE_COMMAND_UI(ID_FILE_SUBTITLES_SEARCH_SINHALA, OnUpdateFileSubtitlesSearchSinhala)
     ON_COMMAND(ID_FILE_PROPERTIES, OnFileProperties)
     ON_UPDATE_COMMAND_UI(ID_FILE_PROPERTIES, OnUpdateFileProperties)
     ON_COMMAND(ID_FILE_CLOSE_AND_RESTORE, OnFileCloseAndRestore)
@@ -5232,6 +5234,81 @@ void CMainFrame::OnFileSubtitlesDownload()
 void CMainFrame::OnUpdateFileSubtitlesDownload(CCmdUI* pCmdUI)
 {
     pCmdUI->Enable(GetLoadState() == MLS::LOADED && !IsPlaybackCaptureMode() && m_pCAP && !m_fAudioOnly);
+}
+
+void CMainFrame::OnFileSubtitlesSearchSinhala()
+{
+    CString filePath = m_pDVBState ? m_pDVBState->sChannelName : m_wndPlaylistBar.GetCurFileName();
+    if (filePath.IsEmpty()) return;
+
+    // Get only the file name from path
+    int slashPos = filePath.ReverseFind('\\');
+    if (slashPos < 0) slashPos = filePath.ReverseFind('/');
+    CString fileName = (slashPos >= 0) ? filePath.Mid(slashPos + 1) : filePath;
+
+    // Remove extension
+    int dotPos = fileName.ReverseFind('.');
+    if (dotPos >= 0) fileName = fileName.Left(dotPos);
+
+    // Clean up dots, dashes and underscores
+    fileName.Replace('.', ' ');
+    fileName.Replace('-', ' ');
+    fileName.Replace('_', ' ');
+
+    // Normalize spaces and lowercase for cleaning
+    CString query = fileName;
+    query.MakeLower();
+
+    // Remove common quality and release group tokens to get a clean search query
+    const TCHAR* tokens[] = {
+        _T("1080p"), _T("720p"), _T("2160p"), _T("4k"), _T("x264"), _T("x265"), _T("h264"), _T("h265"), _T("hevc"),
+        _T("bluray"), _T("webrip"), _T("web-dl"), _T("web dl"), _T("webdl"), _T("brrip"), _T("bdrip"), _T("hdrip"), _T("dvdrip"),
+        _T("yts"), _T("yify"), _T("aac"), _T("dd5.1"), _T("dd5 1"), _T("dd51"), _T("dts"), _T("ac3"), _T("dual audio"), _T("dual-audio"),
+        _T("english"), _T("hindi"), _T("tamil"), _T("telugu"), _T("kannada"), _T("malayalam")
+    };
+
+    for (int i = 0; i < _countof(tokens); i++) {
+        int pos;
+        while ((pos = query.Find(tokens[i])) >= 0) {
+            query = query.Left(pos) + query.Mid(pos + _tcslen(tokens[i]));
+        }
+    }
+
+    // Clean extra whitespace
+    query.Trim();
+    while (query.Replace(_T("  "), _T(" "))) {}
+
+    // If query is empty, fallback to the original file title
+    if (query.IsEmpty()) {
+        query = fileName;
+    }
+
+    // Encode search query for URL
+    CString encodedQuery = _T("");
+    for (int i = 0; i < query.GetLength(); i++) {
+        TCHAR ch = query[i];
+        if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9')) {
+            encodedQuery += ch;
+        } else if (ch == ' ') {
+            encodedQuery += '+';
+        } else {
+            // Percent encode
+            CString percent;
+            percent.Format(_T("%%%02X"), (BYTE)ch);
+            encodedQuery += percent;
+        }
+    }
+
+    // We will search on Google restricted to Baiscope.lk, Cinesubz.co, and Zoom.lk
+    CString searchUrl;
+    searchUrl.Format(_T("https://www.google.com/search?q=site:baiscope.lk+OR+site:cinesubz.co+OR+site:zoom.lk+%s"), encodedQuery);
+
+    ShellExecute(m_hWnd, _T("open"), searchUrl, nullptr, nullptr, SW_SHOWDEFAULT);
+}
+
+void CMainFrame::OnUpdateFileSubtitlesSearchSinhala(CCmdUI* pCmdUI)
+{
+    pCmdUI->Enable(GetLoadState() == MLS::LOADED && !IsPlaybackCaptureMode() && !m_fAudioOnly);
 }
 
 void CMainFrame::OnFileProperties()

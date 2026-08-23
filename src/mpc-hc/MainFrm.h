@@ -748,6 +748,8 @@ public:
     afx_msg void OnUpdateFileSubtitlesUpload(CCmdUI* pCmdUI);
     afx_msg void OnFileSubtitlesDownload();
     afx_msg void OnUpdateFileSubtitlesDownload(CCmdUI* pCmdUI);
+    afx_msg void OnFileSubtitlesSearchSinhala();
+    afx_msg void OnUpdateFileSubtitlesSearchSinhala(CCmdUI* pCmdUI);
     afx_msg void OnFileProperties();
     afx_msg void OnUpdateFileProperties(CCmdUI* pCmdUI);
     afx_msg void OnFileCloseAndRestore();
