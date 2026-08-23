@@ -23,9 +23,22 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          submodules: true   # checkout top-level submodules only (prevents broken nested LAVFilters sub-submodules from failing)
+          submodules: true
 
-      # ── 3. Create build.user.bat to satisfy environment variables ───────
+      # ── 3. Install YASM via Chocolatey ──────────────────────────────────
+      - name: Install YASM
+        run: |
+          choco install yasm -y --no-progress
+        shell: pwsh
+
+      # ── 4. Clone Minimal DirectX SDK (June 2010) to bypass S1023 error ──
+      - name: Clone DX SDK
+        run: |
+          git clone --depth 1 https://github.com/apitrace/dxsdk.git D:\dxsdk
+          echo "DXSDK_DIR=D:\dxsdk\" >> $env:GITHUB_ENV
+        shell: pwsh
+
+      # ── 5. Create build.user.bat to satisfy environment variables ───────
       - name: Create build.user.bat
         run: |
           @'
@@ -38,11 +51,11 @@ jobs:
           '@ | Out-File -FilePath build.user.bat -Encoding ascii
         shell: pwsh
 
-      # ── 4. Setup MSBuild ────────────────────────────────────────────────
+      # ── 6. Setup MSBuild ────────────────────────────────────────────────
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
 
-      # ── 5. Build the project ────────────────────────────────────────────
+      # ── 7. Build the project ────────────────────────────────────────────
       - name: Build mpc-hc (Release | Win32)
         run: |
           msbuild src\mpc-hc\mpc-hc.vcxproj `
@@ -56,7 +69,7 @@ jobs:
             /v:minimal
         shell: pwsh
 
-      # ── 6. Upload .exe as GitHub artifact ───────────────────────────────
+      # ── 8. Upload .exe as GitHub artifact ───────────────────────────────
       - name: Upload mpc-hc.exe artifact
         uses: actions/upload-artifact@v4
         with:
