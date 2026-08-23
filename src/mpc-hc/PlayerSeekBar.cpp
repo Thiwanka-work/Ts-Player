@@ -23,6 +23,7 @@
 #include "PlayerSeekBar.h"
 #include "MainFrm.h"
 #include "mplayerc.h"
+#include "DarkMode.h"
 
 #define TOOLTIP_SHOW_DELAY 100
 #define TOOLTIP_HIDE_TIMEOUT 3000
@@ -183,11 +184,12 @@ void CPlayerSeekBar::CreateThumb(bool bEnabled, CDC& parentDC)
     pThumb = std::unique_ptr<CDC>(new CDC());
 
     if (pThumb->CreateCompatibleDC(&parentDC)) {
+        // Dark mode thumb colours
         COLORREF
-        white  = GetSysColor(COLOR_WINDOW),
-        shadow = GetSysColor(COLOR_3DSHADOW),
-        light  = GetSysColor(COLOR_3DHILIGHT),
-        bkg    = GetSysColor(COLOR_BTNFACE);
+        white  = DarkMode::SEEKBAR_THUMB,
+        shadow = DarkMode::BG_WINDOW,
+        light  = DarkMode::BG_TOOLBAR,
+        bkg    = DarkMode::BG_TOOLBAR;
 
         CRect r(GetThumbRect());
         r.MoveToXY(0, 0);
@@ -468,12 +470,13 @@ void CPlayerSeekBar::OnPaint()
 {
     CPaintDC dc(this);
 
+    // Dark mode colour palette
     COLORREF
-    dark   = GetSysColor(COLOR_GRAYTEXT),
-    white  = GetSysColor(COLOR_WINDOW),
-    shadow = GetSysColor(COLOR_3DSHADOW),
-    light  = GetSysColor(COLOR_3DHILIGHT),
-    bkg    = GetSysColor(COLOR_BTNFACE);
+    dark   = DarkMode::FG_TEXT_DIM,
+    white  = DarkMode::SEEKBAR_THUMB,
+    shadow = DarkMode::BG_WINDOW,
+    light  = DarkMode::BG_TOOLBAR,
+    bkg    = DarkMode::BG_TOOLBAR;
 
     // Thumb
     {
@@ -522,7 +525,14 @@ void CPlayerSeekBar::OnPaint()
 
     // Channel
     {
-        dc.FillSolidRect(&channelRect, m_bEnabled ? white : bkg);
+        // Dark mode: filled portion = accent blue, unfilled = dark track
+        CRect channelFill(channelRect);
+        long playedX = channelRect.left + ChannelPointFromPosition(m_rtPos);
+        channelFill.right = m_bEnabled ? playedX : channelRect.left;
+        dc.FillSolidRect(&channelFill, DarkMode::SEEKBAR_POS);
+        CRect channelUnfilled(channelRect);
+        channelUnfilled.left = channelFill.right;
+        dc.FillSolidRect(&channelUnfilled, DarkMode::SEEKBAR_TRACK);
         CRect r(channelRect);
         r.InflateRect(1, 1);
         dc.Draw3dRect(&r, shadow, light);
@@ -533,7 +543,7 @@ void CPlayerSeekBar::OnPaint()
     {
         CRect r;
         GetClientRect(&r);
-        dc.FillSolidRect(&r, bkg);
+        dc.FillSolidRect(&r, DarkMode::BG_TOOLBAR);
     }
 }
 

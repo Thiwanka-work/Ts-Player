@@ -30,6 +30,7 @@
 #include "PathUtils.h"
 #include "SVGImage.h"
 #include "ImageGrayer.h"
+#include "DarkMode.h"
 
 // CPlayerToolBar
 
@@ -280,12 +281,12 @@ void CPlayerToolBar::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
             lr = CDRF_DODEFAULT;
             break;
         case CDDS_PREPAINT: {
-            // paint the control background, this is needed for XP
+            // paint the control background with dark colour
             CDC dc;
             dc.Attach(pTBCD->nmcd.hdc);
             RECT r;
             GetClientRect(&r);
-            dc.FillSolidRect(&r, ::GetSysColor(COLOR_BTNFACE));
+            dc.FillSolidRect(&r, DarkMode::BG_TOOLBAR);
             dc.Detach();
         }
         lr |= CDRF_NOTIFYITEMDRAW;
@@ -301,7 +302,7 @@ void CPlayerToolBar::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
             dc.Attach(pTBCD->nmcd.hdc);
             RECT r;
             GetItemRect(11, &r);
-            dc.FillSolidRect(&r, GetSysColor(COLOR_BTNFACE));
+            dc.FillSolidRect(&r, DarkMode::BG_TOOLBAR);
             dc.Detach();
             lr |= CDRF_SKIPDEFAULT;
             break;
@@ -357,7 +358,7 @@ void CPlayerToolBar::OnNcPaint() // when using XP styles the NC area isn't drawn
     cr.OffsetRect(-wr.left, -wr.top);
     wr.OffsetRect(-wr.left, -wr.top);
     dc.ExcludeClipRect(&cr);
-    dc.FillSolidRect(wr, GetSysColor(COLOR_BTNFACE));
+    dc.FillSolidRect(wr, DarkMode::BG_TOOLBAR);
 
     // Do not call CToolBar::OnNcPaint() for painting messages
 

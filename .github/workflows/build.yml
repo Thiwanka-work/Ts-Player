@@ -1,0 +1,57 @@
+name: Build MPC-HC Dark Mode
+
+on:
+  push:
+    branches: [ "develop", "main", "master" ]
+  pull_request:
+    branches: [ "develop", "main", "master" ]
+  workflow_dispatch:   # allows manual trigger from GitHub UI
+
+jobs:
+  build:
+    name: Build MPC-HC (Release | Win32)
+    runs-on: windows-2022   # VS 2022 with MSVC v143 + MFC pre-installed
+
+    steps:
+      # ── 1. Checkout code ────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive   # pull in all git submodules
+
+      # ── 2. Setup MSBuild ────────────────────────────────────────────────
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      # ── 3. Build the project ────────────────────────────────────────────
+      - name: Build mpc-hc (Release | Win32)
+        run: |
+          msbuild src\mpc-hc\mpc-hc.vcxproj `
+            /p:Configuration=Release `
+            /p:Platform=Win32 `
+            /p:PlatformToolset=v143 `
+            /m `
+            /nologo `
+            /clp:Summary `
+            /v:minimal
+        shell: pwsh
+
+      # ── 4. Find the built .exe ──────────────────────────────────────────
+      - name: Find output executable
+        id: find_exe
+        run: |
+          $exe = Get-ChildItem -Recurse -Filter "mpc-hc.exe" | Select-Object -First 1 -ExpandProperty FullName
+          echo "EXE_PATH=$exe" >> $env:GITHUB_OUTPUT
+          Write-Host "Built: $exe"
+        shell: pwsh
+
+      # ── 5. Upload .exe as GitHub artifact (downloadable) ────────────────
+      - name: Upload mpc-hc.exe artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mpc-hc-darkmode-Win32-Release
+          path: |
+            **/mpc-hc.exe
+            **/mpc-hc.pdb
+          if-no-files-found: warn
+          retention-days: 30    # artifact available for 30 days

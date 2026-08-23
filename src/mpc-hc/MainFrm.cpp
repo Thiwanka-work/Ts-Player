@@ -85,6 +85,7 @@
 
 #include "FullscreenWnd.h"
 #include "Monitors.h"
+#include "DarkMode.h"
 
 #include <WinAPIUtils.h>
 #include <WinapiFunc.h>
@@ -824,6 +825,9 @@ int CMainFrame::OnNcCreate(LPCREATESTRUCT lpCreateStruct)
         if (fnEnableNonClientDpiScaling) {
             fnEnableNonClientDpiScaling(m_hWnd);
         }
+
+        // Apply dark title bar (Windows 10 build 18362+ / Windows 11)
+        DarkMode::ApplyDarkTitleBar(m_hWnd);
     }
 
     return __super::OnNcCreate(lpCreateStruct);
@@ -838,6 +842,10 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
     if (IsWindows8Point1OrGreater()) {
         m_dpi.Override(m_hWnd);
     }
+
+    // Paint main window background with dark colour
+    ::SetClassLongPtr(m_hWnd, GCLP_HBRBACKGROUND,
+                      reinterpret_cast<LONG_PTR>(DarkMode::GetWindowBrush()));
 
     const WinapiFunc<decltype(ChangeWindowMessageFilterEx)>
     fnChangeWindowMessageFilterEx = { _T("user32.dll"), "ChangeWindowMessageFilterEx" };

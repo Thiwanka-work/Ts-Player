@@ -24,6 +24,7 @@
 #include "PlayerStatusBar.h"
 #include "MainFrm.h"
 #include "DSUtil.h"
+#include "DarkMode.h"
 
 // CPlayerStatusBar
 
@@ -393,11 +394,12 @@ void CPlayerStatusBar::OnPaint()
         r.InflateRect(1, 0, 1, 0);
     }
 
-    dc.Draw3dRect(&r, GetSysColor(COLOR_3DSHADOW), GetSysColor(COLOR_3DHILIGHT));
+    // Dark mode: draw border in a slightly lighter shade and fill with dark status-bar colour
+    dc.Draw3dRect(&r, DarkMode::BG_TOOLBAR, DarkMode::BG_WINDOW);
 
     r.DeflateRect(1, 1);
 
-    dc.FillSolidRect(&r, 0);
+    dc.FillSolidRect(&r, DarkMode::BG_STATUSBAR);
 
     if (m_bm.m_hObject) {
         BITMAP bm;
@@ -479,14 +481,16 @@ BOOL CPlayerStatusBar::OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message)
 
 HBRUSH CPlayerStatusBar::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
 {
-    HBRUSH hbr = CDialogBar::OnCtlColor(pDC, pWnd, nCtlColor);
+    // Dark mode: paint all child controls (status text, time display) with
+    // dark background and light foreground text.
+    pDC->SetBkColor(DarkMode::BG_STATUSBAR);
+    pDC->SetTextColor(DarkMode::FG_TEXT);
 
     if (*pWnd == m_type) {
-        hbr = GetStockBrush(BLACK_BRUSH);
+        return DarkMode::GetStatusBarBrush();
     }
 
-    // TODO:  Return a different brush if the default is not desired
-    return hbr;
+    return DarkMode::GetStatusBarBrush();
 }
 
 BOOL CPlayerStatusBar::PreTranslateMessage(MSG* pMsg)
