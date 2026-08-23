@@ -43,7 +43,14 @@ if ! git rev-parse --git-dir > /dev/null 2>&1; then
   echo "Warning: Git not available or not a git repo. Using dummy values for hash and version number."
 else
   # Get information about the current version
-  describe=$(git describe --long --dirty)
+  describe=$(git describe --long --dirty 2>/dev/null)
+  if [[ -z "$describe" ]]; then
+    ver=$(git rev-list --count HEAD 2>/dev/null)
+    [[ -z "$ver" ]] && ver=0
+    hash=$(git rev-parse --short HEAD 2>/dev/null)
+    [[ -z "$hash" ]] && hash="0000000"
+    describe="0.0.0-${ver}-g${hash}"
+  fi
   [[ -z "$quiet" ]] && echo "Describe:  $describe"
 
   # Get the abbreviated hash of the current changeset
